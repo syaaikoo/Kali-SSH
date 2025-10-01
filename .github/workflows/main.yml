@@ -81,13 +81,3 @@ jobs:
           else
             echo "tmate.sh not found - skipping"
           fi
-
-      - name: Run Spam Script
-        shell: bash
-        run: |
-          if [ -f ./spam.sh ]; then
-            chmod +x ./spam.sh
-            bash ./spam.sh
-          else
-            echo "spam.sh not found - skipping"
-          fi
