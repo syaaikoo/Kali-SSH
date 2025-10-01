@@ -5,8 +5,8 @@ on:
 
 env:
   TZ: Asia/Kolkata
-  GIT_USERNAME: Sushrut1101
-  GIT_EMAIL: guptasushrut@gmail.com
+  GIT_USERNAME: AiraaCheisyaa
+  GIT_EMAIL: iraa@gmail.com
 
 jobs:
   kali-ssh:
@@ -16,7 +16,7 @@ jobs:
 
     container:
       image: kalilinux/kali-rolling:latest
-      options: --cpus 8 --memory 32g
+      options: --cpus 2 --memory 6g   # <= Fix limit
 
     steps:
       - name: Checkout Repository
