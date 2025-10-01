@@ -5,8 +5,8 @@ on:
 
 env:
   TZ: Asia/Kolkata
-  GIT_USERNAME: AiraaCheisyaa
-  GIT_EMAIL: iraa@gmail.com
+  GIT_USERNAME: Sushrut1101
+  GIT_EMAIL: guptasushrut@gmail.com
 
 jobs:
   kali-ssh:
@@ -16,28 +16,78 @@ jobs:
 
     container:
       image: kalilinux/kali-rolling:latest
-      options: --cpus 2 --memory 6g   # <= Fix limit
+      options: --cpus 2 --memory 6g
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Setup Environment
+        shell: bash
         run: |
-          apt update
-          apt install sudo apt-utils -y
+          # noninteractive untuk apt
+          export DEBIAN_FRONTEND=noninteractive
+          set -o pipefail
+
+          echo ">>> update repos"
+          apt-get update -y
+
+          echo ">>> install apt basics"
+          apt-get install -y --no-install-recommends apt-utils dialog ca-certificates gnupg
+
+          echo ">>> set timezone (noninteractive)"
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata
-          ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime
-          apt-get install -y tzdata
-          dpkg-reconfigure --frontend noninteractive tzdata
-          sudo apt update -y && sudo apt install git aria2 curl wget tmate rsync zip unzip lzma cpio ccache neofetch openssh-server -y
-          sudo apt install python2 -y
-          sudo ln -sf /usr/bin/python2 /usr/bin/python
+          ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime || true
+          dpkg-reconfigure --frontend noninteractive tzdata || true
+
+          echo ">>> update again after tzdata changes"
+          apt-get update -y
+
+          echo ">>> install main packages"
+          apt-get install -y --no-install-recommends git aria2 curl wget tmate rsync zip unzip lzma cpio ccache openssh-server sudo
+
+          echo ">>> python2 (symlink) - non-fatal if not available"
+          apt-get install -y --no-install-recommends python2 || true
+          if [ -x /usr/bin/python2 ]; then
+            ln -sf /usr/bin/python2 /usr/bin/python || true
+          fi
+
           git config --global user.name "$GIT_USERNAME"
           git config --global user.email "$GIT_EMAIL"
 
+          echo ">>> try to install neofetch from apt, fallback to upstream if not found"
+          if apt-get install -y --no-install-recommends neofetch; then
+            echo "neofetch installed from apt"
+          else
+            echo "neofetch not found in apt; installing from github..."
+            apt-get install -y --no-install-recommends git curl || true
+            rm -rf /tmp/neofetch
+            git clone https://github.com/dylanaraps/neofetch.git /tmp/neofetch
+            /tmp/neofetch/install.sh || {
+              echo "neofetch install from source failed; continuing without neofetch"
+            }
+          fi
+
+          echo ">>> cleanup apt cache"
+          apt-get clean
+          rm -rf /var/lib/apt/lists/* /tmp/neofetch || true
+
       - name: Run Tmate Script
-        run: bash tmate.sh
+        shell: bash
+        run: |
+          if [ -f ./tmate.sh ]; then
+            chmod +x ./tmate.sh
+            bash ./tmate.sh
+          else
+            echo "tmate.sh not found - skipping"
+          fi
 
       - name: Run Spam Script
-        run: bash spam.sh
+        shell: bash
+        run: |
+          if [ -f ./spam.sh ]; then
+            chmod +x ./spam.sh
+            bash ./spam.sh
+          else
+            echo "spam.sh not found - skipping"
+          fi
